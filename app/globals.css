@@ -60,3 +60,35 @@ main {
     transform: translateY(0);
   }
 }
+
+.demo-theme-light,
+.demo-theme-dark {
+  --demo-shadow-soft: 0 14px 34px rgba(10, 14, 28, 0.14);
+  --demo-shadow-strong: 0 36px 72px rgba(10, 14, 28, 0.24);
+}
+
+.demo-theme-light {
+  color-scheme: light;
+  --demo-shell: #f7fafe;
+  --demo-surface: #ecf2ff;
+  --demo-card: rgba(255, 255, 255, 0.94);
+  --demo-text: #13243f;
+  --demo-muted: #536480;
+  --demo-border: rgba(17, 35, 66, 0.16);
+  --demo-accent: #1e63d6;
+  --demo-glow-1: rgba(120, 174, 255, 0.42);
+  --demo-glow-2: rgba(245, 223, 132, 0.36);
+}
+
+.demo-theme-dark {
+  color-scheme: dark;
+  --demo-shell: #0f1727;
+  --demo-surface: #151f34;
+  --demo-card: rgba(19, 29, 48, 0.94);
+  --demo-text: #e7efff;
+  --demo-muted: #a8b7d2;
+  --demo-border: rgba(158, 184, 224, 0.24);
+  --demo-accent: #79b0ff;
+  --demo-glow-1: rgba(61, 111, 198, 0.48);
+  --demo-glow-2: rgba(176, 136, 46, 0.3);
+}

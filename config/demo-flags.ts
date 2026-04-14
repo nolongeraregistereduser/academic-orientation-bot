@@ -8,4 +8,5 @@ export const demoFlags = {
 export const sessionKeys = {
   wizardDraft: "orientation.wizardDraft.v1",
   resultSnapshot: "orientation.resultSnapshot.v1",
+  demoResultSnapshot: "orientation.demoResultSnapshot.v1",
 };

@@ -14,17 +14,22 @@ import { mockStudentProfile } from "@/data/mock-student-profile";
 import type {
   OrientationAnswers,
   OrientationWizardDraft,
+  StudentProfileContext,
   WizardStepId,
 } from "@/types/orientation";
 import type { OrientationResultSnapshot } from "@/types/scoring";
+import type { DemoRecommendationSnapshot } from "@/types/orientation-chat";
 
 interface OrientationSessionContextValue {
   draft: OrientationWizardDraft;
   resultSnapshot: OrientationResultSnapshot | null;
+  demoResultSnapshot: DemoRecommendationSnapshot | null;
   updateAnswers: (partial: Partial<OrientationAnswers>) => void;
+  updateProfile: (partial: Partial<StudentProfileContext>) => void;
   setActiveStep: (step: WizardStepId) => void;
   markStepCompleted: (step: WizardStepId) => void;
   setResultSnapshot: (snapshot: OrientationResultSnapshot | null) => void;
+  setDemoResultSnapshot: (snapshot: DemoRecommendationSnapshot | null) => void;
   resetSession: () => void;
 }
 
@@ -69,6 +74,23 @@ function readSnapshotFromSessionStorage(): OrientationResultSnapshot | null {
   }
 }
 
+function readDemoResultFromSessionStorage(): DemoRecommendationSnapshot | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.sessionStorage.getItem(sessionKeys.demoResultSnapshot);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as DemoRecommendationSnapshot;
+  } catch {
+    return null;
+  }
+}
+
 const OrientationSessionContext = createContext<OrientationSessionContextValue | null>(null);
 
 export function OrientationSessionProvider({
@@ -81,6 +103,8 @@ export function OrientationSessionProvider({
   );
   const [resultSnapshot, setResultSnapshotState] =
     useState<OrientationResultSnapshot | null>(readSnapshotFromSessionStorage);
+  const [demoResultSnapshot, setDemoResultSnapshotState] =
+    useState<DemoRecommendationSnapshot | null>(readDemoResultFromSessionStorage);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -106,11 +130,37 @@ export function OrientationSessionProvider({
     );
   }, [resultSnapshot]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!demoResultSnapshot) {
+      window.sessionStorage.removeItem(sessionKeys.demoResultSnapshot);
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      sessionKeys.demoResultSnapshot,
+      JSON.stringify(demoResultSnapshot),
+    );
+  }, [demoResultSnapshot]);
+
   const updateAnswers = useCallback((partial: Partial<OrientationAnswers>) => {
     setDraft((previous) => ({
       ...previous,
       answers: {
         ...previous.answers,
+        ...partial,
+      },
+    }));
+  }, []);
+
+  const updateProfile = useCallback((partial: Partial<StudentProfileContext>) => {
+    setDraft((previous) => ({
+      ...previous,
+      profile: {
+        ...previous.profile,
         ...partial,
       },
     }));
@@ -143,12 +193,21 @@ export function OrientationSessionProvider({
     [],
   );
 
+  const setDemoResultSnapshot = useCallback(
+    (snapshot: DemoRecommendationSnapshot | null) => {
+      setDemoResultSnapshotState(snapshot);
+    },
+    [],
+  );
+
   const resetSession = useCallback(() => {
     setDraft(defaultDraft);
     setResultSnapshotState(null);
+    setDemoResultSnapshotState(null);
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(sessionKeys.wizardDraft);
       window.sessionStorage.removeItem(sessionKeys.resultSnapshot);
+      window.sessionStorage.removeItem(sessionKeys.demoResultSnapshot);
     }
   }, []);
 
@@ -156,19 +215,25 @@ export function OrientationSessionProvider({
     return {
       draft,
       resultSnapshot,
+      demoResultSnapshot,
       updateAnswers,
+      updateProfile,
       setActiveStep,
       markStepCompleted,
       setResultSnapshot,
+      setDemoResultSnapshot,
       resetSession,
     };
   }, [
+    demoResultSnapshot,
     draft,
     markStepCompleted,
     resetSession,
     resultSnapshot,
     setActiveStep,
+    setDemoResultSnapshot,
     setResultSnapshot,
+    updateProfile,
     updateAnswers,
   ]);
 

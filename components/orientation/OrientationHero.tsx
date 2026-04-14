@@ -22,7 +22,7 @@ export function OrientationHero() {
           {demoCopy.hero.subtitle}
         </p>
         <div className="mt-8">
-          <Link href={orientationRoutes.wizard}>
+          <Link href={orientationRoutes.demo}>
             <Button
               size="lg"
               onClick={() => {
