@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  --app-bg: #f6f9ff;
+  --app-fg: #0f1729;
+  --brand-ink: #0d1b36;
+  --brand-paper: #fffef8;
+  --brand-accent: #ffdf5a;
+  --brand-muted: #5d6b83;
+}
+
+@theme inline {
+  --color-background: var(--app-bg);
+  --color-foreground: var(--app-fg);
+  --font-sans: var(--font-display);
+  --font-mono: var(--font-plex-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background:
+    radial-gradient(circle at 10% 10%, #fff8cc 0%, transparent 32%),
+    radial-gradient(circle at 90% 0%, #e0f2ff 0%, transparent 30%),
+    linear-gradient(180deg, #f8f9ff 0%, #f4fbff 100%);
+  color: var(--app-fg);
+  font-family: var(--font-display), "Segoe UI", sans-serif;
+  min-height: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+main {
+  animation: enter-up 420ms ease-out;
+}
+
+::selection {
+  background: #ffe58a;
+  color: #101a35;
+}
+
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
