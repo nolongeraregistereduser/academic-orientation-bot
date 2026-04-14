@@ -2,6 +2,7 @@ export type OrientationEventName =
   | "orientation_landing_viewed"
   | "orientation_started"
   | "chat_started"
+  | "assessment_phase_started"
   | "question_asked"
   | "answer_submitted"
   | "branch_selected"

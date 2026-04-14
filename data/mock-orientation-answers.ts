@@ -27,4 +27,24 @@ export const mockInitialAnswers: OrientationAnswers = {
 
   teamworkStyle: "balanced",
   thinkingStyle: "analytical",
+
+  gpaRange: "3-2-to-3-6",
+  advancedCourseExposure: ["statistics", "data science"],
+  freeTimeTopics: ["markets", "technology", "product"],
+  peopleDataIdeasPreference: "data",
+  extracurricularProfiles: ["business club"],
+  workStructurePreference: "balanced",
+  detailVsBigPicturePreference: "balanced",
+  workEnvironmentPreference: "hybrid",
+  desiredCareerTrack: "fintech analyst",
+  decisionPriority: "balanced",
+  organizationPreference: "company",
+  growthVsBalancePreference: "balanced",
+  preferredUsStates: ["California", "Texas"],
+  degreeDurationPreference: "2-year",
+  selfPerceivedStrengths: ["analytical reasoning", "communication"],
+  helpRequestThemes: ["data decisions", "strategy"],
+  coreValues: ["growth", "impact", "stability"],
+  regretPromptReflection:
+    "I would regret choosing a major that ignores my strengths in data and decision-making.",
 };

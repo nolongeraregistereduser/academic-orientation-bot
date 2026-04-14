@@ -37,4 +37,14 @@ export const salaryAndCareerOutcomes: Record<
     roles: ["UX Designer", "Product Designer", "UX Researcher"],
     outlook: "Strong demand in digital product teams focused on user-centric growth.",
   },
+  "public-policy": {
+    medianSalaryUsd: 88000,
+    roles: ["Policy Analyst", "Government Affairs Associate", "Impact Strategy Consultant"],
+    outlook: "Growing demand in civic-tech, international development, and social impact strategy.",
+  },
+  psychology: {
+    medianSalaryUsd: 87000,
+    roles: ["Behavioral Analyst", "People Operations Specialist", "UX Researcher"],
+    outlook: "Strong growth in behavioral science, people analytics, and human-centered product teams.",
+  },
 };

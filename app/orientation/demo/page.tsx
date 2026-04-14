@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { ChatShell } from "@/components/chat/ChatShell";
 import { MessageBubble } from "@/components/chat/MessageBubble";
+import { PhaseProgressBar } from "@/components/chat/PhaseProgressBar";
 import { ProcessingTimeline } from "@/components/chat/ProcessingTimeline";
 import { StickyComposer } from "@/components/chat/StickyComposer";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
@@ -16,6 +17,8 @@ export default function OrientationDemoPage() {
   const {
     messages,
     currentQuestion,
+    progress,
+    currentPhaseMeta,
     isStarted,
     isAdvisorTyping,
     isSubmitting,
@@ -45,14 +48,7 @@ export default function OrientationDemoPage() {
         isStarted ? (
           <StickyComposer
             disabled={!canSend || isSubmitting}
-            placeholder={
-              currentQuestion?.placeholder ??
-              "Share your thoughts and I will adapt your next question."
-            }
-            helper={
-              currentQuestion?.helper ??
-              "Vantery AI asks one strategic question at a time to improve recommendation confidence."
-            }
+            question={currentQuestion}
             onSubmit={submitAnswer}
           />
         ) : (
@@ -80,6 +76,10 @@ export default function OrientationDemoPage() {
     >
       <div className="flex-1 overflow-y-auto rounded-2xl border border-[var(--demo-border)] bg-[var(--demo-surface)]/78 p-3 md:p-4">
         <div className="space-y-4">
+          {isStarted ? (
+            <PhaseProgressBar progress={progress} currentPhaseMeta={currentPhaseMeta} />
+          ) : null}
+
           <AnimatePresence initial={false}>
             {messages.map((message) => (
               <MessageBubble key={message.id} message={message} />

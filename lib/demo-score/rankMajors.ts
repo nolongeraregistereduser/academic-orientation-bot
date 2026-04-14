@@ -5,6 +5,8 @@ import { scoreInterestFit } from "@/lib/demo-score/scoreInterestFit";
 import { scoreCareerFit } from "@/lib/demo-score/scoreCareerFit";
 import { scoreFinancialFit } from "@/lib/demo-score/scoreFinancialFit";
 import { scorePersonalityFit } from "@/lib/demo-score/scorePersonalityFit";
+import { applyDeterministicRuleLayer } from "@/lib/demo-score/applyDeterministicRuleLayer";
+import { SCORE_WEIGHTS } from "@/lib/demo-score/weights";
 import { clamp } from "@/lib/demo-score/utils";
 
 export function rankMajors(input: OrientationScoringInput): MajorScore[] {
@@ -14,20 +16,51 @@ export function rankMajors(input: OrientationScoringInput): MajorScore[] {
     const career = scoreCareerFit(input, major);
     const financial = scoreFinancialFit(input, major);
     const personality = scorePersonalityFit(input, major);
+    const rules = applyDeterministicRuleLayer(input, major.id);
+
+    const academicScore = Math.round(
+      clamp(
+        academic.score + rules.academicFit,
+        0,
+        SCORE_WEIGHTS.academicFit,
+      ),
+    );
+    const interestScore = Math.round(
+      clamp(
+        interest.score + rules.interestFit,
+        0,
+        SCORE_WEIGHTS.interestFit,
+      ),
+    );
+    const careerScore = Math.round(
+      clamp(
+        career.score + rules.careerFit,
+        0,
+        SCORE_WEIGHTS.careerFit,
+      ),
+    );
+    const personalityScore = Math.round(
+      clamp(
+        personality.score + rules.personalityFit,
+        0,
+        SCORE_WEIGHTS.personalityFit,
+      ),
+    );
 
     const totalScore =
-      academic.score +
-      interest.score +
-      career.score +
+      academicScore +
+      interestScore +
+      careerScore +
       financial.score +
-      personality.score;
+      personalityScore;
 
     const confidence = Math.round(
       clamp(
         totalScore +
-          (academic.score >= 26 ? 3 : 0) +
-          (interest.score >= 18 ? 2 : 0) +
-          (career.score >= 15 ? 2 : 0),
+          (academicScore >= 26 ? 3 : 0) +
+          (interestScore >= 18 ? 2 : 0) +
+          (careerScore >= 15 ? 2 : 0) +
+          rules.confidenceBonus,
         40,
         99,
       ),
@@ -39,13 +72,14 @@ export function rankMajors(input: OrientationScoringInput): MajorScore[] {
       totalScore,
       confidence,
       breakdown: {
-        academicFit: academic.score,
-        interestFit: interest.score,
-        careerFit: career.score,
+        academicFit: academicScore,
+        interestFit: interestScore,
+        careerFit: careerScore,
         financialFeasibility: financial.score,
-        personalityFit: personality.score,
+        personalityFit: personalityScore,
       },
       rationale: [
+        rules.rationale[0] ?? "Deterministic rule-layer found no extra boost for this profile.",
         academic.rationale[0],
         interest.rationale[0],
         career.rationale[0],

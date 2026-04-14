@@ -5,6 +5,36 @@ export type WizardStepId =
   | "feasibility-constraints"
   | "review";
 
+export type GpaRange =
+  | "below-2-8"
+  | "2-8-to-3-2"
+  | "3-2-to-3-6"
+  | "3-6-to-4-0";
+
+export type PeopleDataIdeasPreference = "people" | "data" | "ideas" | "blend";
+
+export type WorkStructurePreference = "structured" | "balanced" | "open-ended";
+
+export type DetailVsBigPicturePreference = "detail" | "balanced" | "big-picture";
+
+export type WorkEnvironmentPreference = "desk" | "field" | "hybrid";
+
+export type DecisionPriority = "salary" | "impact" | "prestige" | "balanced";
+
+export type OrganizationPreference =
+  | "company"
+  | "startup"
+  | "entrepreneur"
+  | "nonprofit"
+  | "undecided";
+
+export type GrowthVsBalancePreference =
+  | "work-life-balance"
+  | "balanced"
+  | "high-growth";
+
+export type DegreeDurationPreference = "1-year" | "2-year" | "3-plus-years" | "flexible";
+
 export interface StudentProfileContext {
   firstName: string;
   lastName: string;
@@ -59,6 +89,25 @@ export interface OrientationAnswers {
 
   teamworkStyle: "solo" | "balanced" | "team";
   thinkingStyle: "creative" | "balanced" | "analytical";
+
+  gpaRange: GpaRange;
+  advancedCourseExposure: string[];
+  freeTimeTopics: string[];
+  peopleDataIdeasPreference: PeopleDataIdeasPreference;
+  extracurricularProfiles: string[];
+  workStructurePreference: WorkStructurePreference;
+  detailVsBigPicturePreference: DetailVsBigPicturePreference;
+  workEnvironmentPreference: WorkEnvironmentPreference;
+  desiredCareerTrack: string;
+  decisionPriority: DecisionPriority;
+  organizationPreference: OrganizationPreference;
+  growthVsBalancePreference: GrowthVsBalancePreference;
+  preferredUsStates: string[];
+  degreeDurationPreference: DegreeDurationPreference;
+  selfPerceivedStrengths: string[];
+  helpRequestThemes: string[];
+  coreValues: string[];
+  regretPromptReflection: string;
 }
 
 export interface OrientationSessionInput {

@@ -106,8 +106,18 @@ function buildCounselorSummary(
 
   const strongest = input.answers.strongestSubjects.slice(0, 2).join(" and ");
   const style = input.answers.thinkingStyle;
+  const values = input.answers.coreValues.slice(0, 2).join(" and ");
 
-  return `Your strong fit for ${topMajor.majorName} comes from your comfort with ${strongest}, your ${style} decision style, and your long-term career direction in ${input.answers.fiveYearCareerVision}.`;
+  const gpaLabel =
+    input.answers.gpaRange === "3-6-to-4-0"
+      ? "a high GPA trajectory"
+      : input.answers.gpaRange === "3-2-to-3-6"
+        ? "a strong GPA trajectory"
+        : input.answers.gpaRange === "2-8-to-3-2"
+          ? "a developing GPA profile"
+          : "a rebuilding academic profile";
+
+  return `Your strong fit for ${topMajor.majorName} comes from ${gpaLabel}, your comfort with ${strongest}, your ${style} work style, and your values around ${values}. Combined with your long-term direction in ${input.answers.fiveYearCareerVision}, this recommendation is both ambitious and realistic.`;
 }
 
 export async function buildDemoRecommendation(

@@ -6,15 +6,21 @@ import { orientationRoutes } from "@/config/routing";
 import {
   ADVISOR_WELCOME_MESSAGE,
   createInitialConversationState,
+  getConversationProgress,
   getNextConversationQuestion,
+  getPhaseMeta,
   PROCESSING_STAGES,
   submitConversationAnswer,
 } from "@/lib/conversation-engine";
 import { trackFunnelEvent } from "@/lib/analytics/funnelTracker";
 import { buildDemoRecommendation } from "@/lib/demo-recommendation";
 import type {
+  ConversationAnswerPayload,
   ConversationEngineState,
   ConversationMessage,
+  ConversationPhaseId,
+  ConversationPhaseMeta,
+  ConversationProgress,
   ConversationQuestion,
   ProcessingStage,
 } from "@/types/orientation-chat";
@@ -23,6 +29,8 @@ import { useOrientationSession } from "@/hooks/useOrientationSession";
 interface UseConversationDemoResult {
   messages: ConversationMessage[];
   currentQuestion: ConversationQuestion | null;
+  progress: ConversationProgress;
+  currentPhaseMeta: ConversationPhaseMeta | null;
   isStarted: boolean;
   isAdvisorTyping: boolean;
   isSubmitting: boolean;
@@ -32,7 +40,7 @@ interface UseConversationDemoResult {
   flowError: string | null;
   canSend: boolean;
   startConversation: () => void;
-  submitAnswer: (value: string) => Promise<void>;
+  submitAnswer: (payload: ConversationAnswerPayload) => Promise<void>;
 }
 
 function wait(ms: number): Promise<void> {
@@ -45,6 +53,7 @@ function createMessage(
   role: ConversationMessage["role"],
   content: string,
   status: ConversationMessage["status"],
+  phaseId?: ConversationMessage["phaseId"],
   questionId?: ConversationMessage["questionId"],
 ): ConversationMessage {
   return {
@@ -53,6 +62,7 @@ function createMessage(
     content,
     status,
     questionId,
+    phaseId,
     createdAtIso: new Date().toISOString(),
   };
 }
@@ -68,6 +78,7 @@ export function useConversationDemo(): UseConversationDemoResult {
   } = useOrientationSession();
 
   const latestDraftRef = useRef(draft);
+  const phaseRef = useRef<ConversationPhaseId | null>(null);
   const engineStateRef = useRef<ConversationEngineState>(createInitialConversationState());
   const answerAccumulatorRef = useRef<Partial<typeof draft.answers>>({
     countryFlexibility: "usa-only",
@@ -87,6 +98,10 @@ export function useConversationDemo(): UseConversationDemoResult {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingIndex, setProcessingIndex] = useState(-1);
   const [flowError, setFlowError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ConversationProgress>(
+    getConversationProgress(engineStateRef.current),
+  );
+  const [currentPhaseMeta, setCurrentPhaseMeta] = useState<ConversationPhaseMeta | null>(null);
 
   useEffect(() => {
     latestDraftRef.current = draft;
@@ -100,31 +115,42 @@ export function useConversationDemo(): UseConversationDemoResult {
     );
   }, []);
 
-  const askAdvisorQuestion = useCallback(
-    async (question: ConversationQuestion) => {
+  const askAdvisorMessage = useCallback(
+    async (content: string, phaseId?: ConversationPhaseId) => {
       setIsAdvisorTyping(true);
-      await wait(560 + Math.floor(Math.random() * 320));
+      await wait(520 + Math.floor(Math.random() * 260));
 
-      const assistantMessage = createMessage(
-        "assistant",
-        question.prompt,
-        "streaming",
-        question.id,
-      );
+      const assistantMessage = createMessage("assistant", content, "streaming", phaseId);
 
       setMessages((previous) => [...previous, assistantMessage]);
-      setCurrentQuestion(question);
       setIsAdvisorTyping(false);
-
-      trackFunnelEvent("question_asked", {
-        questionId: question.id,
-      });
 
       window.setTimeout(() => {
         markMessageComplete(assistantMessage.id);
-      }, 950);
+      }, 900);
     },
     [markMessageComplete],
+  );
+
+  const askAdvisorQuestion = useCallback(
+    async (question: ConversationQuestion) => {
+      await askAdvisorMessage(question.prompt, question.phaseId);
+      setCurrentQuestion(question);
+
+      if (phaseRef.current !== question.phaseId) {
+        phaseRef.current = question.phaseId;
+        setCurrentPhaseMeta(getPhaseMeta(question.phaseId));
+        trackFunnelEvent("assessment_phase_started", {
+          phaseId: question.phaseId,
+        });
+      }
+
+      trackFunnelEvent("question_asked", {
+        questionId: question.id,
+        phaseId: question.phaseId,
+      });
+    },
+    [askAdvisorMessage],
   );
 
   const runProcessingAndBuildResults = useCallback(async () => {
@@ -154,8 +180,9 @@ export function useConversationDemo(): UseConversationDemoResult {
     setDemoResultSnapshot(demoSnapshot);
 
     trackFunnelEvent("chat_completed", {
-      branch: engineStateRef.current.branch ?? "balanced",
+      branch: engineStateRef.current.branchTag ?? "balanced",
       topMajor: demoSnapshot.topMajors[0]?.majorName ?? "unknown",
+      askedQuestions: engineStateRef.current.askedQuestionIds.length,
     });
 
     router.push(orientationRoutes.demoResults);
@@ -166,9 +193,23 @@ export function useConversationDemo(): UseConversationDemoResult {
       return;
     }
 
+    const freshState = createInitialConversationState();
+    engineStateRef.current = freshState;
+    phaseRef.current = null;
+
+    answerAccumulatorRef.current = {
+      countryFlexibility: "usa-only",
+      visaPreference: "f1-focused",
+    };
+    profileAccumulatorRef.current = {
+      preferredDestinations: ["United States"],
+    };
+
     setResultSnapshot(null);
     setDemoResultSnapshot(null);
     setFlowError(null);
+    setProgress(getConversationProgress(freshState));
+    setCurrentPhaseMeta(null);
     setIsStarted(true);
 
     trackFunnelEvent("chat_started", {
@@ -180,35 +221,50 @@ export function useConversationDemo(): UseConversationDemoResult {
       return;
     }
 
-    void askAdvisorQuestion(initialQuestion);
-  }, [askAdvisorQuestion, isStarted, setDemoResultSnapshot, setResultSnapshot]);
+    const phaseIntro = `Great. We'll start with ${getPhaseMeta(initialQuestion.phaseId).title.toLowerCase()}.`;
+
+    void (async () => {
+      await askAdvisorMessage(phaseIntro, initialQuestion.phaseId);
+      await askAdvisorQuestion(initialQuestion);
+    })();
+  }, [askAdvisorMessage, askAdvisorQuestion, isStarted, setDemoResultSnapshot, setResultSnapshot]);
 
   const submitAnswer = useCallback(
-    async (value: string) => {
-      const cleanValue = value.trim();
-      if (!cleanValue || !currentQuestion || isSubmitting || isAdvisorTyping || isProcessing) {
+    async (payload: ConversationAnswerPayload) => {
+      if (!currentQuestion || isSubmitting || isAdvisorTyping || isProcessing) {
+        return;
+      }
+
+      if (payload.selectedOptionIds.length < currentQuestion.minSelections) {
         return;
       }
 
       setIsSubmitting(true);
 
       try {
-        const studentMessage = createMessage("student", cleanValue, "complete");
+        const turn = submitConversationAnswer(
+          engineStateRef.current,
+          currentQuestion.id,
+          payload,
+        );
+
+        const studentMessage = createMessage(
+          "student",
+          turn.studentSummary,
+          "complete",
+          currentQuestion.phaseId,
+        );
         setMessages((previous) => [...previous, studentMessage]);
 
         trackFunnelEvent("answer_submitted", {
           questionId: currentQuestion.id,
+          phaseId: currentQuestion.phaseId,
         });
 
-        const previousBranch = engineStateRef.current.branch;
-        const turn = submitConversationAnswer(
-          engineStateRef.current,
-          currentQuestion.id,
-          cleanValue,
-        );
-
+        const previousBranch = engineStateRef.current.branchTag;
         engineStateRef.current = turn.nextState;
-        setCurrentQuestion(null);
+        setProgress(getConversationProgress(turn.nextState));
+         setCurrentQuestion(null);
 
         answerAccumulatorRef.current = {
           ...answerAccumulatorRef.current,
@@ -224,13 +280,20 @@ export function useConversationDemo(): UseConversationDemoResult {
         updateProfile(turn.profilePatch);
 
         if (
-          turn.nextState.branch &&
-          previousBranch !== turn.nextState.branch &&
-          turn.nextState.branch !== "balanced"
+          turn.nextState.branchTag &&
+          previousBranch !== turn.nextState.branchTag &&
+          turn.nextState.branchTag !== "balanced"
         ) {
           trackFunnelEvent("branch_selected", {
-            branch: turn.nextState.branch,
+            branch: turn.nextState.branchTag,
           });
+        }
+
+        if (turn.phaseMilestone) {
+          await askAdvisorMessage(
+            turn.phaseMilestone,
+            turn.nextQuestion?.phaseId ?? undefined,
+          );
         }
 
         if (turn.isComplete || !turn.nextQuestion) {
@@ -252,6 +315,7 @@ export function useConversationDemo(): UseConversationDemoResult {
       }
     },
     [
+      askAdvisorMessage,
       askAdvisorQuestion,
       currentQuestion,
       isAdvisorTyping,
@@ -266,6 +330,8 @@ export function useConversationDemo(): UseConversationDemoResult {
   return {
     messages,
     currentQuestion,
+    progress,
+    currentPhaseMeta,
     isStarted,
     isAdvisorTyping,
     isSubmitting,
